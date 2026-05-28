@@ -1,0 +1,36 @@
+/* 메인 홈 플레이스홀더 전환 효과 */
+#home-section .placeholder-transition {
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+#home-section .placeholder-hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+#home-section .placeholder-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 로딩 섹션 (Stitch Loading CSS) */
+#loading-section .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #efedf1; /* surface-container */
+    border-top: 4px solid #1a73e8; /* primary-container */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+        
+#loading-section .pulse-text {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
+}
