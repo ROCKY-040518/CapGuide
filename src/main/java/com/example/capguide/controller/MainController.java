@@ -1,32 +1,38 @@
 package com.example.capguide.controller;
 
-import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.example.capguide.service.GeminiService;
+
 @Controller
 public class MainController {
+
+    private final GeminiService geminiService;
+
+    public MainController(GeminiService geminiService) {
+        this.geminiService = geminiService;
+    }
 
     @GetMapping("/")
     public String index() {
         return "main"; // 우리가 1번 단계에서 만든 main.jsp를 호출합니다.
     }
 
-    @PostMapping("/api/search")
+    /**
+     * 프론트엔드에서 { "keyword": "..." } 형태로 POST 요청을 보내면,
+     * GeminiService를 통해 실제 AI 응답(JSON 문자열)을 받아 그대로 반환한다.
+     */
+    @PostMapping(value = "/api/search", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public Map<String, String> mockSearch(@RequestBody Map<String, String> request) {
-        String userKeyword = request.get("keyword");
-        
-        Map<String, String> mockResult = new HashMap<>();
-        mockResult.put("title", "🤖 추천 주제: [" + userKeyword + "] 연계 스마트 시스템");
-        mockResult.put("background", "이 프로젝트는 사용자가 입력한 " + userKeyword + " 분야의 고질적인 문제를 해결하기 위해 구상된 기획안입니다.");
-        
-        try { Thread.sleep(3000); } catch (InterruptedException e) { e.printStackTrace(); }
-
-        return mockResult;
+    public String search(@RequestBody Map<String, String> request) {
+        String keyword = request.get("keyword");
+        return geminiService.generateProjectIdea(keyword);
     }
 }
