@@ -25,17 +25,17 @@
         ];
         let currentIdx = 0;
         const placeholderEl = document.getElementById('placeholder-text');
-        const searchInput = document.getElementById('keyword-input'); // 수정된 ID 매핑
+        const searchInput = document.getElementById('keyword-input');
         const clearBtn = document.getElementById('clear-btn');
 
         const togglePlaceholderVisibility = () => {
-            if (!searchInput) return;
+            if (!searchInput || !placeholderEl) return;
             if (searchInput.value.trim() !== '' || document.activeElement === searchInput) {
                 placeholderEl.style.opacity = '0';
-                clearBtn.classList.toggle('hidden', searchInput.value.trim() === '');
+                if (clearBtn) clearBtn.classList.toggle('hidden', searchInput.value.trim() === '');
             } else {
                 placeholderEl.style.opacity = '1';
-                clearBtn.classList.add('hidden');
+                if (clearBtn) clearBtn.classList.add('hidden');
             }
         };
 
@@ -44,29 +44,35 @@
             searchInput.addEventListener('blur', togglePlaceholderVisibility);
             searchInput.addEventListener('input', togglePlaceholderVisibility);
             
-            clearBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                searchInput.focus();
-                togglePlaceholderVisibility();
-            });
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    searchInput.value = '';
+                    searchInput.focus();
+                    togglePlaceholderVisibility();
+                });
+            }
         }
 
-        setInterval(() => {
-            if (document.activeElement === searchInput || (searchInput && searchInput.value.trim() !== '')) return;
+        if (placeholderEl) {
+            setInterval(() => {
+                if (document.activeElement === searchInput || (searchInput && searchInput.value.trim() !== '')) return;
 
-            placeholderEl.classList.remove('placeholder-visible');
-            placeholderEl.classList.add('placeholder-hidden');
-            
-            setTimeout(() => {
-                currentIdx = (currentIdx + 1) % placeholders.length;
-                placeholderEl.textContent = placeholders[currentIdx];
+                placeholderEl.classList.remove('placeholder-visible');
+                placeholderEl.classList.add('placeholder-hidden');
                 
-                requestAnimationFrame(() => {
-                    placeholderEl.classList.remove('placeholder-hidden');
-                    placeholderEl.classList.add('placeholder-visible');
-                });
-            }, 500);
-        }, 3000);
+                setTimeout(() => {
+                    currentIdx = (currentIdx + 1) % placeholders.length;
+                    if (placeholderEl) placeholderEl.textContent = placeholders[currentIdx];
+                    
+                    requestAnimationFrame(() => {
+                        if (placeholderEl) {
+                            placeholderEl.classList.remove('placeholder-hidden');
+                            placeholderEl.classList.add('placeholder-visible');
+                        }
+                    });
+                }, 500);
+            }, 3000);
+        }
     });
 </script>
 </body>
