@@ -1,5 +1,6 @@
 package com.example.capguide.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
@@ -28,12 +29,12 @@ public class MainController {
 
     /**
      * 프론트엔드에서 { "keyword": "..." } 형태로 POST 요청을 보내면,
-     * GeminiService를 통해 실제 AI 응답을 ProjectPlanResponse DTO로 받아 JSON 반환한다.
+     * GeminiService를 통해 1~3개의 프로젝트 기획안 리스트를 JSON 배열로 반환한다.
      */
     @PostMapping(value = "/api/search", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ProjectPlanResponse search(@RequestBody Map<String, String> request) {
+    public List<ProjectPlanResponse> search(@RequestBody Map<String, String> request) {
         String keyword = request.get("keyword");
-        return geminiService.generateProjectIdea(keyword);
+        return geminiService.generateProjectIdeas(keyword);
     }
 }

@@ -10,28 +10,32 @@
         </p>
     </header>
     
-    <div class="grid grid-cols-1 gap-gutter max-w-2xl mx-auto">
-        
+    <!-- 카드들이 동적으로 채워지는 컨테이너 -->
+    <div id="result-cards-container" class="grid grid-cols-1 gap-gutter max-w-2xl mx-auto">
+    </div>
+
+    <!-- 카드 템플릿: JS에서 복제(clone)하여 사용 -->
+    <template id="card-template">
         <article class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col gap-md relative overflow-hidden group">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary-fixed opacity-80"></div>
             
             <!-- 제목 & 배경 -->
             <header>
-                <h2 id="res-title" class="text-headline-md font-headline-md text-on-surface mb-xs"></h2>
-                <p id="res-background" class="text-body-md font-body-md text-on-surface-variant"></p>
+                <h2 data-field="title" class="text-headline-md font-headline-md text-on-surface mb-xs"></h2>
+                <p data-field="background" class="text-body-md font-body-md text-on-surface-variant"></p>
             </header>
             
             <!-- 핵심 기능 -->
             <section class="bg-surface-container-low rounded-lg p-sm">
                 <h3 class="text-label-md font-label-md text-on-surface mb-xs uppercase tracking-wider text-secondary">Key Features</h3>
-                <ul id="res-features" class="space-y-2">
+                <ul data-field="features" class="space-y-2">
                 </ul>
             </section>
             
             <!-- 기술 스택 -->
             <section>
                 <h3 class="text-label-md font-label-md text-on-surface mb-xs uppercase tracking-wider text-secondary">Tech Stack</h3>
-                <div id="res-tech-stack" class="flex flex-wrap gap-xs">
+                <div data-field="techStack" class="flex flex-wrap gap-xs">
                 </div>
             </section>
 
@@ -41,7 +45,7 @@
                     <span class="material-symbols-outlined text-[16px] align-middle mr-1" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
                     Detailed Schedule
                 </h3>
-                <ol id="res-detailed-schedule" class="space-y-1.5 list-none pl-0">
+                <ol data-field="detailedSchedule" class="space-y-1.5 list-none pl-0">
                 </ol>
             </section>
 
@@ -51,41 +55,21 @@
                     <span class="material-symbols-outlined text-[16px] align-middle mr-1" style="font-variation-settings: 'FILL' 1;">emoji_objects</span>
                     Expected Effect
                 </h3>
-                <p id="res-expected-effect" class="text-body-md font-body-md text-on-surface-variant"></p>
+                <p data-field="expectedEffect" class="text-body-md font-body-md text-on-surface-variant"></p>
             </section>
-            
-            <!-- 타임라인 -->
-            <footer class="mt-auto pt-sm border-t border-outline-variant">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-label-md font-label-md text-secondary">Estimated Timeline</span>
-                    <span id="res-duration" class="text-label-md font-label-md text-primary font-bold"></span>
-                </div>
-                <div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden flex">
-                    <div class="bg-primary h-full w-1/4 rounded-l-full relative group-hover:opacity-90"></div>
-                    <div class="bg-primary-fixed-dim h-full w-1/4 border-l border-surface-container-lowest"></div>
-                    <div class="bg-primary-fixed-dim h-full w-1/4 border-l border-surface-container-lowest"></div>
-                    <div class="bg-primary-fixed-dim h-full w-1/4 border-l border-surface-container-lowest"></div>
-                </div>
-                <div class="flex justify-between mt-1 px-1">
-                    <span class="text-[10px] text-on-surface-variant">Research</span>
-                    <span class="text-[10px] text-on-surface-variant">Design</span>
-                    <span class="text-[10px] text-on-surface-variant">Dev</span>
-                    <span class="text-[10px] text-on-surface-variant">Test</span>
-                </div>
-            </footer>
 
             <!-- 저장 & 공유 버튼 -->
             <div class="flex gap-sm pt-sm border-t border-outline-variant">
-                <button id="btn-save" type="button" class="flex-1 flex items-center justify-center gap-xs bg-primary text-on-primary text-label-lg font-label-lg px-4 py-2.5 rounded-lg hover:opacity-90 transition-opacity cursor-pointer">
+                <button type="button" data-action="save" class="flex-1 flex items-center justify-center gap-xs bg-primary text-on-primary text-label-lg font-label-lg px-4 py-2.5 rounded-lg hover:opacity-90 transition-opacity cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">bookmark</span>
                     Save
                 </button>
-                <button id="btn-share" type="button" class="flex-1 flex items-center justify-center gap-xs bg-surface-variant text-on-surface text-label-lg font-label-lg px-4 py-2.5 rounded-lg hover:bg-outline-variant transition-colors border border-outline-variant cursor-pointer">
+                <button type="button" data-action="share" class="flex-1 flex items-center justify-center gap-xs bg-surface-variant text-on-surface text-label-lg font-label-lg px-4 py-2.5 rounded-lg hover:bg-outline-variant transition-colors border border-outline-variant cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">share</span>
                     Share
                 </button>
             </div>
         </article>
-        
-    </div>
+    </template>
+
 </main>

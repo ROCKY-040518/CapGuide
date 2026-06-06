@@ -1,58 +1,27 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // ──────────────────────────────────────────────
+    // 전역 플래그: Race Condition 방어
+    // ──────────────────────────────────────────────
+    var isFetching = false;
+
     // 1. 제어할 HTML 엘리먼트들을 가져옵니다.
-    const homeSection = document.getElementById("home-section");
-    const loadingSection = document.getElementById("loading-section");
-    const resultSection = document.getElementById("result-section");
+    var homeSection = document.getElementById("home-section");
+    var loadingSection = document.getElementById("loading-section");
+    var resultSection = document.getElementById("result-section");
     
-    const searchForm = document.getElementById("search-form");
-    const searchInput = document.getElementById("search-input");
-    const searchBtn = document.getElementById("search-btn");
+    var searchForm = document.getElementById("search-form");
+    var searchInput = document.getElementById("search-input");
+    var searchBtn = document.getElementById("search-btn");
     
-    // 결과 화면에 데이터를 꽂아넣을 타깃 엘리먼트
-    const resTitle = document.getElementById("res-title");
-    const resBackground = document.getElementById("res-background");
-    const resFeatures = document.getElementById("res-features");
-    const resTechStack = document.getElementById("res-tech-stack");
-    const resDuration = document.getElementById("res-duration");
-    const resDetailedSchedule = document.getElementById("res-detailed-schedule");
-    const resExpectedEffect = document.getElementById("res-expected-effect");
-
-    // Save / Share 버튼
-    const btnSave = document.getElementById("btn-save");
-    const btnShare = document.getElementById("btn-share");
+    // 다중 카드 렌더링용
+    var cardTemplate = document.getElementById("card-template");
+    var cardsContainer = document.getElementById("result-cards-container");
 
     // ──────────────────────────────────────────────
-    // Save 버튼 클릭 이벤트 (뼈대)
-    // ──────────────────────────────────────────────
-    if (btnSave) {
-        btnSave.addEventListener("click", function () {
-            alert("💾 저장 기능은 추후 업데이트 예정입니다.");
-        });
-    }
-
-    // ──────────────────────────────────────────────
-    // Share 버튼 클릭 이벤트 (뼈대)
-    // ──────────────────────────────────────────────
-    if (btnShare) {
-        btnShare.addEventListener("click", function () {
-            // 클립보드에 현재 URL 복사 시도
-            if (navigator.clipboard && resTitle) {
-                const shareText = resTitle.textContent + "\n" + (resBackground ? resBackground.textContent : "");
-                navigator.clipboard.writeText(shareText).then(function () {
-                    alert("📋 결과가 클립보드에 복사되었습니다!");
-                }).catch(function () {
-                    alert("🔗 공유 기능은 추후 업데이트 예정입니다.");
-                });
-            } else {
-                alert("🔗 공유 기능은 추후 업데이트 예정입니다.");
-            }
-        });
-    }
-
-    // ──────────────────────────────────────────────
-    // 검색 버튼 disabled 상태를 복원하는 헬퍼
+    // 검색 버튼 상태 제어 헬퍼
     // ──────────────────────────────────────────────
     function enableSearchBtn() {
+        isFetching = false;
         if (searchBtn) {
             searchBtn.disabled = false;
             searchBtn.textContent = "Search";
@@ -60,21 +29,141 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function disableSearchBtn() {
+        isFetching = true;
         if (searchBtn) {
             searchBtn.disabled = true;
             searchBtn.textContent = "Searching...";
         }
     }
 
-    // 2. 폼 제출 이벤트 리스너 등록
+    // ──────────────────────────────────────────────
+    // 단일 카드 렌더링 함수
+    // ──────────────────────────────────────────────
+    function renderCard(data, index) {
+        if (!cardTemplate) return null;
+
+        var clone = cardTemplate.content.cloneNode(true);
+
+        // 카드 번호별 그라데이션 색상 차별화
+        var gradientBar = clone.querySelector(".bg-gradient-to-r");
+        if (gradientBar && index > 0) {
+            var gradients = [
+                "from-primary to-primary-fixed",
+                "from-tertiary to-tertiary-fixed",
+                "from-secondary to-secondary-fixed"
+            ];
+            gradientBar.className = "absolute top-0 left-0 w-full h-1 bg-gradient-to-r " + gradients[index % gradients.length] + " opacity-80";
+        }
+
+        // title
+        var titleEl = clone.querySelector('[data-field="title"]');
+        if (titleEl) titleEl.textContent = data.title || "";
+
+        // background
+        var bgEl = clone.querySelector('[data-field="background"]');
+        if (bgEl) bgEl.textContent = data.background || "";
+
+        // features
+        var featuresEl = clone.querySelector('[data-field="features"]');
+        if (featuresEl && Array.isArray(data.features)) {
+            data.features.forEach(function (feature) {
+                var li = document.createElement("li");
+                li.className = "flex items-start gap-xs text-body-md font-body-md text-on-surface";
+                li.innerHTML =
+                    '<span class="material-symbols-outlined text-primary text-[18px] mt-0.5" style="font-variation-settings: \'FILL\' 1;">check_circle</span>' +
+                    '<span>' + escapeHtml(feature) + '</span>';
+                featuresEl.appendChild(li);
+            });
+        }
+
+        // techStack
+        var techEl = clone.querySelector('[data-field="techStack"]');
+        if (techEl && Array.isArray(data.techStack)) {
+            data.techStack.forEach(function (tech) {
+                var span = document.createElement("span");
+                span.className = "inline-flex items-center bg-primary/10 text-primary text-label-md font-bold px-3 py-1 rounded-full border border-primary/20 shadow-sm";
+                span.textContent = tech;
+                techEl.appendChild(span);
+            });
+        }
+
+        // detailedSchedule
+        var scheduleEl = clone.querySelector('[data-field="detailedSchedule"]');
+        if (scheduleEl && Array.isArray(data.detailedSchedule)) {
+            data.detailedSchedule.forEach(function (item) {
+                var li = document.createElement("li");
+                li.className = "flex items-start gap-xs text-body-md font-body-md text-on-surface";
+                li.innerHTML =
+                    '<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5" style="font-variation-settings: \'FILL\' 1;">event_note</span>' +
+                    '<span>' + escapeHtml(item) + '</span>';
+                scheduleEl.appendChild(li);
+            });
+        }
+
+        // expectedEffect
+        var effectEl = clone.querySelector('[data-field="expectedEffect"]');
+        if (effectEl) effectEl.textContent = data.expectedEffect || "";
+
+        // Save 버튼
+        var saveBtn = clone.querySelector('[data-action="save"]');
+        if (saveBtn) {
+            saveBtn.addEventListener("click", function () {
+                alert("💾 저장 기능은 추후 업데이트 예정입니다.");
+            });
+        }
+
+        // Share 버튼
+        var shareBtn = clone.querySelector('[data-action="share"]');
+        if (shareBtn) {
+            shareBtn.addEventListener("click", function () {
+                var shareText = (data.title || "") + "\n" + (data.background || "");
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(shareText).then(function () {
+                        alert("📋 결과가 클립보드에 복사되었습니다!");
+                    }).catch(function () {
+                        alert("🔗 공유 기능은 추후 업데이트 예정입니다.");
+                    });
+                } else {
+                    alert("🔗 공유 기능은 추후 업데이트 예정입니다.");
+                }
+            });
+        }
+
+        return clone;
+    }
+
+    // ──────────────────────────────────────────────
+    // 전체 카드 리스트 렌더링
+    // ──────────────────────────────────────────────
+    function renderAllCards(dataArray) {
+        // 기존 결과 완전 초기화
+        if (cardsContainer) cardsContainer.innerHTML = "";
+
+        if (!Array.isArray(dataArray) || dataArray.length === 0) return;
+
+        dataArray.forEach(function (data, index) {
+            var card = renderCard(data, index);
+            if (card && cardsContainer) {
+                cardsContainer.appendChild(card);
+            }
+        });
+    }
+
+    // ──────────────────────────────────────────────
+    // 폼 제출 이벤트 리스너
+    // ──────────────────────────────────────────────
     if (searchForm) {
         searchForm.addEventListener("submit", function (e) {
-            // 🚨 브라우저가 페이지를 새로고침하는 기본 동작을 원천 차단합니다!
-            e.preventDefault(); 
+            e.preventDefault();
 
-            const keyword = searchInput ? searchInput.value.trim() : "";
+            // 🚨 Race Condition 방어: 이미 요청 중이면 즉시 무시
+            if (isFetching) {
+                console.warn("이미 API 요청이 진행 중입니다. 중복 요청을 차단합니다.");
+                return;
+            }
+
+            var keyword = searchInput ? searchInput.value.trim() : "";
             
-            // 검색어가 비어있으면 경고
             if (!keyword) {
                 alert("프로젝트 키워드나 주제를 입력해주세요!");
                 return;
@@ -82,19 +171,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
             console.log("입력된 키워드:", keyword);
 
-            // [중복 클릭 방지] 검색 버튼 즉시 비활성화
+            // 검색 버튼 비활성화 + 플래그 설정
             disableSearchBtn();
 
-            // [화면 전환 1단계] 홈 화면을 숨기고 로딩 스피너를 보여줍니다.
+            // 기존 결과 화면 초기화 (플리커링 방지)
+            if (cardsContainer) cardsContainer.innerHTML = "";
+
+            // 화면 전환: 홈 → 로딩
             if (homeSection) homeSection.style.display = "none";
+            if (resultSection) resultSection.style.display = "none";
             if (loadingSection) loadingSection.style.display = "block";
 
-            // [비동기 통신] 백엔드 MainController의 /api/search API로 요청을 보냅니다.
+            // 비동기 통신
             fetch("/api/search", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ keyword: keyword })
             })
             .then(function (response) {
@@ -103,74 +194,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 return response.json();
             })
-            .then(function (data) {
-                console.log("백엔드로부터 수신한 데이터:", data);
+            .then(function (dataArray) {
+                console.log("백엔드로부터 수신한 데이터:", dataArray);
 
-                // ── 기본 데이터 주입 ──
-                if (resTitle) resTitle.textContent = data.title || "";
-                if (resBackground) resBackground.textContent = data.background || "";
+                // 다중 카드 렌더링
+                renderAllCards(dataArray);
 
-                // ── features 배열 → <li> 태그 동적 생성 ──
-                if (resFeatures && Array.isArray(data.features)) {
-                    resFeatures.innerHTML = "";
-                    data.features.forEach(function (feature) {
-                        var li = document.createElement("li");
-                        li.className = "flex items-start gap-xs text-body-md font-body-md text-on-surface";
-                        li.innerHTML =
-                            '<span class="material-symbols-outlined text-primary text-[18px] mt-0.5" style="font-variation-settings: \'FILL\' 1;">check_circle</span>' +
-                            '<span>' + escapeHtml(feature) + '</span>';
-                        resFeatures.appendChild(li);
-                    });
-                }
-
-                // ── techStack 배열 → 칩 모양의 <span> 태그 동적 생성 ──
-                if (resTechStack && Array.isArray(data.techStack)) {
-                    resTechStack.innerHTML = "";
-                    data.techStack.forEach(function (tech) {
-                        var span = document.createElement("span");
-                        span.className = "bg-surface-variant text-on-surface text-label-md font-label-md px-3 py-1 rounded-full border border-outline-variant";
-                        span.textContent = tech;
-                        resTechStack.appendChild(span);
-                    });
-                }
-
-                // ── duration 문자열 → 텍스트 덮어쓰기 ──
-                if (resDuration) {
-                    resDuration.textContent = data.duration || "";
-                }
-
-                // ── detailedSchedule 배열 → 주차별 일정 <li> 동적 생성 ──
-                if (resDetailedSchedule && Array.isArray(data.detailedSchedule)) {
-                    resDetailedSchedule.innerHTML = "";
-                    data.detailedSchedule.forEach(function (item, index) {
-                        var li = document.createElement("li");
-                        li.className = "flex items-start gap-xs text-body-md font-body-md text-on-surface";
-                        li.innerHTML =
-                            '<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5" style="font-variation-settings: \'FILL\' 1;">event_note</span>' +
-                            '<span>' + escapeHtml(item) + '</span>';
-                        resDetailedSchedule.appendChild(li);
-                    });
-                }
-
-                // ── expectedEffect 문자열 → 텍스트 덮어쓰기 ──
-                if (resExpectedEffect) {
-                    resExpectedEffect.textContent = data.expectedEffect || "";
-                }
-
-                // [화면 전환 2단계] 로딩 창을 숨기고 결과 화면을 띄웁니다.
+                // 화면 전환: 로딩 → 결과
                 if (loadingSection) loadingSection.style.display = "none";
                 if (resultSection) resultSection.style.display = "block";
 
-                // 검색 버튼 복원
                 enableSearchBtn();
             })
             .catch(function (error) {
                 console.error("에러 발생:", error);
                 alert("데이터를 처리하는 중 오류가 발생했습니다.\n" + error.message);
-                // 에러 시 홈 화면으로 복구
+                // 에러 시 홈 화면 복구
                 if (loadingSection) loadingSection.style.display = "none";
                 if (homeSection) homeSection.style.display = "block";
-                // 검색 버튼 복원
                 enableSearchBtn();
             });
         });
