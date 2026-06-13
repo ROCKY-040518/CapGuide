@@ -154,6 +154,27 @@
 <!-- Toast Container (전역 알림) -->
 <div aria-live="polite" class="fixed bottom-lg right-lg z-50 flex flex-col gap-sm" id="toast-container"></div>
 
+<!-- Saved Plans Modal -->
+<div id="saved-plans-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/30 px-4 py-8">
+    <div class="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-3xl bg-surface shadow-2xl ring-1 ring-black/5">
+        <div class="flex items-center justify-between gap-4 p-6 pb-4 border-b border-outline-variant shrink-0">
+            <div>
+                <p class="text-label-lg font-semibold text-on-surface">My Saved Plans</p>
+                <p class="text-body-md text-on-surface-variant">최근 저장된 기획안을 확인하고 관리하세요.</p>
+            </div>
+            <button id="close-saved-plans-modal" class="rounded-full bg-surface-container px-3 py-2 text-secondary hover:bg-surface-container-high transition">닫기</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 pt-4">
+            <div class="grid gap-4" id="saved-plans-list">
+                <div class="rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 text-center text-body-md text-secondary">
+                    저장된 기획안이 없습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <header class="w-full bg-surface border-b border-outline-variant flat no shadows">
     <div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto h-16">
         <div class="flex items-center gap-md">
@@ -183,7 +204,8 @@
                         <p class="text-label-lg font-bold text-on-surface" id="dropdown-username">Guest</p>
                         <p class="text-body-md text-on-surface-variant" id="dropdown-email">로그인 필요</p>
                     </div>
-                    <div class="p-2">
+                    <div class="p-2 space-y-2">
+                        <button id="saved-plans-btn" class="w-full text-left px-4 py-2 text-label-lg text-on-surface hover:bg-surface-variant rounded transition-colors">My Saved Plans</button>
                         <button aria-label="Log out" class="w-full text-left px-4 py-2 text-label-lg text-error hover:bg-error-container hover:text-on-error-container rounded transition-colors" id="logout-btn">
                             Log Out
                         </button>

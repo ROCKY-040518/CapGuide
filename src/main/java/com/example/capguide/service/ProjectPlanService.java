@@ -58,6 +58,21 @@ public class ProjectPlanService {
     }
 
     /**
+     * 기획안을 삭제한다. 요청한 사용자가 해당 기획안의 소유자인지 반드시 검증한다.
+     */
+    @Transactional
+    public void deletePlan(Long planId, Long userId) {
+        ProjectPlan plan = projectPlanRepository.findById(planId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 기획안입니다. (id=" + planId + ")"));
+
+        if (!plan.getUser().getId().equals(userId)) {
+            throw new SecurityException("해당 기획안을 삭제할 권한이 없습니다.");
+        }
+
+        projectPlanRepository.delete(plan);
+    }
+
+    /**
      * 카드 데이터의 상세 내용을 하나의 JSON 문자열로 직렬화한다.
      */
     private String buildSummaryJson(ProjectPlanSaveRequest request) {

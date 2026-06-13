@@ -102,6 +102,31 @@ public class ProjectPlanController {
     }
 
     /**
+     * DELETE /api/plans/{id}
+     * 현재 로그인된 사용자가 소유한 기획안을 삭제한다.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePlan(@PathVariable Long id,
+                                        HttpServletRequest httpRequest) {
+        Long userId = getSessionUserId(httpRequest);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        try {
+            projectPlanService.deletePlan(id, userId);
+            return ResponseEntity.ok(Map.of("message", "기획안이 삭제되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    /**
      * 세션에서 현재 로그인된 사용자의 ID를 추출한다.
      */
     private Long getSessionUserId(HttpServletRequest httpRequest) {
