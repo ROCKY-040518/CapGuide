@@ -105,9 +105,54 @@
         }
     </script>
     <link rel="stylesheet" href="/css/stitch-main.css">
+    <style>
+        /* Toast Animation */
+        @keyframes toast-slide-in {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes toast-slide-out {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        .toast-enter {
+            animation: toast-slide-in 0.3s ease-out forwards;
+        }
+        .toast-exit {
+            animation: toast-slide-out 0.3s ease-in forwards;
+        }
+        
+        /* Placeholder Animation */
+        .placeholder-transition {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .placeholder-hidden {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        .placeholder-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
     <script src="/js/stitch-action.js" defer></script>
 </head>
-<body class="bg-surface min-h-screen flex flex-col font-sans text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<body class="bg-surface min-h-screen flex flex-col font-sans text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed relative">
+
+<!-- Toast Container (전역 알림) -->
+<div aria-live="polite" class="fixed bottom-lg right-lg z-50 flex flex-col gap-sm" id="toast-container"></div>
 
 <header class="w-full bg-surface border-b border-outline-variant flat no shadows">
     <div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto h-16">
@@ -115,20 +160,71 @@
             <a class="text-headline-sm font-headline-sm font-bold text-primary" href="#">CapGuide</a>
         </div>
         <nav class="hidden md:flex items-center gap-lg">
-            <a class="text-label-md font-label-md text-primary border-b-2 border-primary pb-1 opacity-80 transition-opacity" href="#">Explore</a>
-            <a class="text-label-md font-label-md text-secondary hover:text-primary transition-colors" href="#">About</a>
-            <a class="text-label-md font-label-md text-secondary hover:text-primary transition-colors" href="#">Resources</a>
+            <a aria-label="Explore Capstones" class="coming-soon-link text-label-md font-label-md text-primary border-b-2 border-primary pb-1 opacity-80 transition-opacity hover:opacity-100" href="#">Explore</a>
+            <a aria-label="About CapGuide" class="coming-soon-link text-label-md font-label-md text-secondary hover:text-primary transition-colors" href="#">About</a>
+            <a aria-label="Resources" class="coming-soon-link text-label-md font-label-md text-secondary hover:text-primary transition-colors" href="#">Resources</a>
         </nav>
         <div class="flex items-center gap-sm text-secondary">
-            <button aria-label="notifications" class="p-2 rounded-full hover:bg-surface-variant transition-colors">
+            <button aria-label="Notifications" class="coming-soon-btn p-2 rounded-full hover:bg-surface-variant transition-colors">
                 <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
             </button>
-            <button aria-label="settings" class="p-2 rounded-full hover:bg-surface-variant transition-colors">
+            <button aria-label="Settings" class="coming-soon-btn p-2 rounded-full hover:bg-surface-variant transition-colors">
                 <span class="material-symbols-outlined" data-icon="settings">settings</span>
             </button>
-            <button aria-label="User profile" class="ml-2 w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-lg overflow-hidden ring-2 ring-transparent hover:ring-primary-fixed transition-all">
-                <span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
-            </button>
+            <!-- 프로필 드롭다운 -->
+            <div class="relative ml-2">
+                <button aria-expanded="false" aria-haspopup="true" aria-label="Toggle user menu" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-lg overflow-hidden ring-2 ring-transparent hover:ring-primary-fixed transition-all" id="profile-btn">
+                    <span class="material-symbols-outlined text-[20px]" data-icon="person" id="profile-icon">person</span>
+                    <span class="hidden text-sm font-bold" id="profile-initial">JD</span>
+                </button>
+                <!-- Dropdown Menu -->
+                <div class="absolute right-0 mt-2 w-48 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg hidden opacity-0 transition-opacity duration-200 z-50" id="profile-dropdown">
+                    <div class="p-4 border-b border-outline-variant">
+                        <p class="text-label-lg font-bold text-on-surface" id="dropdown-username">Guest</p>
+                        <p class="text-body-md text-on-surface-variant" id="dropdown-email">로그인 필요</p>
+                    </div>
+                    <div class="p-2">
+                        <button aria-label="Log out" class="w-full text-left px-4 py-2 text-label-lg text-error hover:bg-error-container hover:text-on-error-container rounded transition-colors" id="logout-btn">
+                            Log Out
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </header>
+
+<!-- 로그인/회원가입 모달 -->
+<div id="auth-modal" class="fixed inset-0 z-50 hidden bg-black/30 flex items-center justify-center transition-all">
+    <div class="bg-surface rounded-xl shadow-lg p-lg w-96 max-w-[90vw] relative">
+        <!-- 모달 닫기 버튼 -->
+        <button id="close-auth-modal" class="absolute top-4 right-4 p-1 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <!-- 탭 네비게이션 -->
+        <div class="flex gap-sm mb-lg border-b border-outline-variant">
+            <button id="login-tab" class="pb-3 px-1 text-label-md font-label-md text-primary border-b-2 border-primary transition-all">로그인</button>
+            <button id="signup-tab" class="pb-3 px-1 text-label-md font-label-md text-secondary hover:text-primary transition-all">회원가입</button>
+        </div>
+
+        <!-- 로그인 폼 -->
+        <div id="login-form" class="space-y-md">
+            <h2 class="text-headline-md font-headline-md text-on-surface mb-lg">로그인</h2>
+            <input id="login-email" type="email" placeholder="이메일" class="w-full px-md py-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-body-md">
+            <input id="login-password" type="password" placeholder="비밀번호" class="w-full px-md py-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-body-md">
+            <button id="login-submit" class="w-full bg-primary text-on-primary py-sm rounded-lg font-label-lg transition-opacity hover:opacity-90">로그인</button>
+            <div id="login-error" class="text-error text-body-md hidden"></div>
+        </div>
+
+        <!-- 회원가입 폼 -->
+        <div id="signup-form" class="space-y-md hidden">
+            <h2 class="text-headline-md font-headline-md text-on-surface mb-lg">회원가입</h2>
+            <input id="signup-email" type="email" placeholder="이메일" class="w-full px-md py-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-body-md">
+            <input id="signup-password" type="password" placeholder="비밀번호" class="w-full px-md py-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-body-md">
+            <input id="signup-nickname" type="text" placeholder="닉네임" class="w-full px-md py-sm border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-body-md">
+            <button id="signup-submit" class="w-full bg-primary text-on-primary py-sm rounded-lg font-label-lg transition-opacity hover:opacity-90">회원가입</button>
+            <div id="signup-error" class="text-error text-body-md hidden"></div>
+        </div>
+    </div>
+</div>

@@ -15,6 +15,4 @@
     </div>
 </div>
 
-<script src="/js/stitch-action.js"></script>
-
 <jsp:include page="common/footer.jsp" />

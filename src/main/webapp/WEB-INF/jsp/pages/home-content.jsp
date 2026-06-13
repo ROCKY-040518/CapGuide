@@ -1,39 +1,52 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<main class="flex-grow flex flex-col items-center justify-center w-full px-4 md:px-12 max-w-[1280px] mx-auto py-20">
+<main class="flex-grow flex flex-col items-center justify-center w-full px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto py-xl">
     
-    <div class="mb-10 text-center flex flex-col items-center">
-        <h1 class="text-4xl md:text-5xl font-bold text-blue-600 tracking-tight mb-2">CapGuide</h1>
-        <p class="text-base text-gray-500">The definitive search for academic capstones</p>
+    <!-- 브랜드 섹션 -->
+    <div class="mb-xl text-center flex flex-col items-center">
+        <h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary tracking-tight mb-xs">CapGuide</h1>
+        <p class="text-body-md font-body-md text-secondary">The definitive search for academic capstones</p>
     </div>
     
-    <div class="w-full max-w-[640px] relative">
-        <form id="search-form" class="flex items-center w-full bg-white border border-gray-300 rounded-full px-6 h-[56px] transition-all duration-300 shadow-sm focus-within:shadow-md focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-            
-            <span class="material-symbols-outlined text-gray-400 mr-3">search</span>
-            
-            <input aria-label="Search capstone subjects" 
-                   autocomplete="off" 
-                   class="w-full h-full bg-transparent border-none outline-none focus:ring-0 p-0 text-lg text-gray-900 placeholder-gray-400" 
-                   id="search-input" 
-                   type="text"
-                   placeholder="원하는 캡스톤 주제를 입력하세요 (예: AI 스마트 시스템)"/>
+    <!-- 검색창 -->
+    <div class="w-full max-w-[640px] relative group">
+        <form id="search-form" class="flex items-center w-full bg-surface-container-lowest border border-outline-variant rounded-full px-lg h-[56px] transition-shadow duration-300 shadow-sm hover:shadow-[0_1px_3px_rgba(0,0,0,0.12),_0_1px_2px_rgba(0,0,0,0.24)] focus-within:shadow-[0_1px_3px_rgba(0,0,0,0.12),_0_1px_2px_rgba(0,0,0,0.24)] focus-within:border-primary">
+            <span aria-hidden="true" class="material-symbols-outlined text-outline mr-sm">search</span>
+            <div class="relative flex-grow h-full flex items-center">
+                <!-- 롤링 플레이스홀더 -->
+                <div aria-hidden="true" class="absolute left-0 text-body-lg font-body-lg text-outline pointer-events-none placeholder-transition placeholder-visible w-full truncate" id="placeholder-text">
+                    인문학 캡스톤 주제
+                </div>
+                <!-- 검색 입력창 -->
+                <input aria-label="Search capstone subjects" 
+                       autocomplete="off" 
+                       class="w-full h-full bg-transparent border-none outline-none focus:ring-0 p-0 text-body-lg font-body-lg text-on-surface" 
+                       id="search-input" 
+                       placeholder="" 
+                       type="text"/>
+            </div>
+            <!-- 초기화 버튼 -->
+            <button aria-label="Clear search input" type="button" class="hidden text-outline hover:text-on-surface ml-sm p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50" id="clear-btn">
+                <span aria-hidden="true" class="material-symbols-outlined text-[20px]">close</span>
+            </button>
         </form>
     </div>
     
-    <div class="flex items-center gap-3 mt-6">
-        <button id="search-btn" type="submit" form="search-form" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium text-sm px-6 py-3 rounded-md border border-gray-300 transition-all cursor-pointer">
+    <!-- 액션 버튼 -->
+    <div class="flex items-center gap-sm mt-lg">
+        <button aria-label="Execute Search" type="button" class="bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-lg font-label-lg px-lg py-sm rounded border border-transparent hover:border-outline-variant transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50" id="search-btn">
             Search
         </button>
-        <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium text-sm px-6 py-3 rounded-md border border-gray-300 transition-all cursor-pointer">
+        <button aria-label="I'm Feeling Lucky Search" type="button" class="bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-lg font-label-lg px-lg py-sm rounded border border-transparent hover:border-outline-variant transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50" id="lucky-btn">
             I'm Feeling Lucky
         </button>
     </div>
     
-    <div class="flex flex-wrap justify-center gap-2 mt-8 max-w-[800px]">
-        <span class="text-sm text-gray-500">Trending:</span>
-        <a class="text-sm font-medium text-blue-600 hover:underline" href="#">Machine Learning</a>
-        <a class="text-sm font-medium text-blue-600 hover:underline" href="#">Sustainable Energy</a>
-        <a class="text-sm font-medium text-blue-600 hover:underline" href="#">Urban Design</a>
+    <!-- Trending 링크 -->
+    <div class="flex flex-wrap justify-center gap-sm mt-xl max-w-[800px]">
+        <span class="text-label-md font-label-md text-secondary">Trending:</span>
+        <button aria-label="Search trending topic: Machine Learning" type="button" class="trending-link text-label-md font-label-md text-primary hover:underline focus:outline-none focus:underline" data-topic="Machine Learning">Machine Learning</button>
+        <button aria-label="Search trending topic: Sustainable Energy" type="button" class="trending-link text-label-md font-label-md text-primary hover:underline focus:outline-none focus:underline" data-topic="Sustainable Energy">Sustainable Energy</button>
+        <button aria-label="Search trending topic: Urban Design" type="button" class="trending-link text-label-md font-label-md text-primary hover:underline focus:outline-none focus:underline" data-topic="Urban Design">Urban Design</button>
     </div>
     
 </main>
