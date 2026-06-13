@@ -1,13 +1,21 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <main class="flex-1 w-full px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto py-xl">
     
-    <header class="mb-xl">
-        <h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-on-surface mb-xs">
-            Recommended Projects
-        </h1>
-        <p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl">
-            Based on your interests, we've curated these high-impact capstone project topics for you.
-        </p>
+    <header class="mb-xl flex flex-col gap-sm">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-sm">
+            <div>
+                <h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-on-surface mb-xs">
+                    Recommended Projects
+                </h1>
+                <p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl">
+                    Based on your interests, we've curated these high-impact capstone project topics for you.
+                </p>
+            </div>
+            <button id="reset-search-btn" type="button" class="inline-flex items-center justify-center rounded-full border border-outline-variant bg-surface-container px-4 py-2 text-label-md font-label-md text-on-surface transition hover:bg-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                Reset Search
+            </button>
+        </div>
     </header>
     
     <!-- 카드들이 동적으로 채워지는 컨테이너 -->

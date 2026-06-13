@@ -5,7 +5,6 @@ import com.example.capguide.domain.User;
 import com.example.capguide.dto.ProjectPlanSaveRequest;
 import com.example.capguide.repository.UserRepository;
 import com.example.capguide.service.ProjectPlanService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,6 +57,7 @@ public class ProjectPlanController {
     /**
      * GET /api/plans
      * 현재 로그인된 사용자가 저장한 모든 기획안을 반환한다.
+     * 정규화된 엔티티에서 직접 필드를 읽어 프론트엔드 호환 형태로 변환한다.
      */
     @GetMapping
     public ResponseEntity<?> getMyPlans(HttpServletRequest httpRequest) {
@@ -69,31 +69,20 @@ public class ProjectPlanController {
 
         List<ProjectPlan> plans = projectPlanService.getPlansByUserId(userId);
 
-        // 엔티티를 프론트엔드가 바로 렌더링할 수 있는 형태로 변환
         List<Map<String, Object>> result = new ArrayList<>();
         for (ProjectPlan plan : plans) {
             Map<String, Object> item = new HashMap<>();
             item.put("id", plan.getId());
             item.put("title", plan.getTitle());
             item.put("createdAt", plan.getCreatedAt().toString());
+            item.put("background", plan.getBackground());
+            item.put("duration", plan.getDuration());
+            item.put("expectedEffect", plan.getExpectedEffect());
 
-            // summary JSON을 파싱하여 원본 카드 데이터 복원
-            try {
-                Map<String, Object> summaryData = objectMapper.readValue(
-                        plan.getSummary(), new TypeReference<Map<String, Object>>() {});
-                item.putAll(summaryData);
-            } catch (JsonProcessingException e) {
-                item.put("background", plan.getSummary());
-            }
-
-            // techStacks JSON을 파싱
-            try {
-                List<String> techStacks = objectMapper.readValue(
-                        plan.getTechStacks(), new TypeReference<List<String>>() {});
-                item.put("techStack", techStacks);
-            } catch (Exception e) {
-                item.put("techStack", List.of());
-            }
+            // JSON 문자열 → List<String> 파싱
+            item.put("features", parseJsonList(plan.getFeatures()));
+            item.put("techStack", parseJsonList(plan.getTechStacks()));
+            item.put("detailedSchedule", parseJsonList(plan.getDetailedSchedule()));
 
             result.add(item);
         }
@@ -123,6 +112,20 @@ public class ProjectPlanController {
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // ── Private Helpers ──
+
+    /**
+     * JSON 배열 문자열을 List<String>으로 파싱한다.
+     */
+    private List<String> parseJsonList(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return List.of();
         }
     }
 

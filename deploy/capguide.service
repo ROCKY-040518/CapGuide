@@ -1,0 +1,57 @@
+[Unit]
+Description=CapGuide Spring Boot Application
+Documentation=https://github.com/your-repo/CapGuide
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+# ── 실행 사용자 ──
+User=capguide
+Group=capguide
+
+# ── 실행 명령 ──
+# WAR 파일이지만 spring-boot-maven-plugin 덕분에 java -jar로 실행 가능 (Embedded Tomcat)
+ExecStart=/usr/bin/java \
+    -Xms256m -Xmx512m \
+    -Dserver.port=8080 \
+    -Dspring.profiles.active=prod \
+    -jar /home/capguide/capguide/capguide.war
+
+# ── 작업 디렉터리 ──
+WorkingDirectory=/home/capguide/capguide
+
+# ── 환경 변수 ──
+# Gemini API 키는 환경 변수로 주입 (GitHub에 노출 차단)
+Environment="GEMINI_API_KEY=your-gemini-api-key-here"
+Environment="SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/capguide?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+Environment="SPRING_DATASOURCE_USERNAME=root"
+Environment="SPRING_DATASOURCE_PASSWORD=1234"
+
+# ── 재시작 정책 ──
+# 비정상 종료 시 10초 후 자동 재시작 (무중단 운영)
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# ── 포트 충돌 방지 ──
+# 서비스 중지 시 기존 프로세스가 완전히 종료될 때까지 대기
+ExecStop=/bin/kill -TERM $MAINPID
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+
+# ── 로깅 ──
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=capguide
+
+# ── 보안 강화 ──
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/capguide/capguide
+
+[Install]
+# 서버 부팅 시 자동 시작
+WantedBy=multi-user.target

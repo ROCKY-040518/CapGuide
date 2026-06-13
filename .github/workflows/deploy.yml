@@ -1,0 +1,78 @@
+name: Deploy to Linux Mint Server
+
+# ──────────────────────────────────────────────
+# 트리거: main 브랜치에 Push 될 때만 실행
+# ──────────────────────────────────────────────
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ── 1단계: 소스 코드 체크아웃 ──
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # ── 2단계: JDK 17 세팅 ──
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      # ── 3단계: Maven 빌드 (.war 패키징) ──
+      - name: Build with Maven
+        run: chmod +x mvnw && ./mvnw clean package -DskipTests
+        
+      # ── 4단계: 빌드 산출물 확인 ──
+      - name: Verify build output
+        run: ls -lh target/*.war
+
+      # ── 5단계: .war 파일을 리눅스 서버로 SCP 전송 ──
+      - name: Transfer WAR to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "target/capguide-0.0.1-SNAPSHOT.war"
+          target: "/home/${{ secrets.SERVER_USERNAME }}/capguide/"
+          strip_components: 1
+
+      # ── 6단계: SSH 접속 → 배포 스크립트 실행 ──
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            DEPLOY_DIR="/home/${{ secrets.SERVER_USERNAME }}/capguide"
+            WAR_FILE="$DEPLOY_DIR/capguide-0.0.1-SNAPSHOT.war"
+            APP_WAR="$DEPLOY_DIR/capguide.war"
+            
+            echo "🔄 [1/4] Renaming WAR file..."
+            mv -f "$WAR_FILE" "$APP_WAR"
+            
+            echo "🛑 [2/4] Stopping current service..."
+            sudo systemctl stop capguide || true
+            
+            echo "🚀 [3/4] Starting service..."
+            sudo systemctl start capguide
+            
+            echo "⏳ [4/4] Waiting for application to start..."
+            sleep 10
+            
+            if sudo systemctl is-active --quiet capguide; then
+              echo "✅ Deploy successful! CapGuide is running."
+            else
+              echo "❌ Deploy failed! Checking logs..."
+              sudo journalctl -u capguide --no-pager -n 30
+              exit 1
+            fi

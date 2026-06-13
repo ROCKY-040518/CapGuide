@@ -66,6 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var searchForm = document.getElementById("search-form");
     var searchInput = document.getElementById("search-input");
     var searchBtn = document.getElementById("search-btn");
+    var resetBtn = document.getElementById("reset-search-btn");
     var clearBtn = document.getElementById("clear-btn");
     var placeholderEl = document.getElementById("placeholder-text");
     
@@ -725,12 +726,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(function (response) {
                     return response.json().then(function (body) {
                         return { ok: response.ok, data: body };
+                    }).catch(function () {
+                        return { ok: response.ok, data: { message: "서버 응답을 처리하는 중 오류가 발생했습니다." } };
                     });
                 })
                 .then(function (result) {
                     if (result.ok) {
                         showToast("기획안이 성공적으로 저장되었습니다!", "success");
-                        // 저장 완료 상태로 버튼 변경
                         saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span> Saved';
                         saveBtn.classList.remove("bg-primary");
                         saveBtn.classList.add("bg-[#146c2e]");
@@ -742,7 +744,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
                 .catch(function (error) {
                     console.error("저장 오류:", error);
-                    showToast("저장 중 오류가 발생했습니다.", "error");
+                    showToast(error && error.message ? error.message : "저장 중 오류가 발생했습니다.", "error");
                     saveBtn.innerHTML = originalText;
                     saveBtn.disabled = false;
                 });
@@ -893,10 +895,33 @@ document.addEventListener("DOMContentLoaded", function () {
     // ──────────────────────────────────────────────
     // 검색 실행 함수
     // ──────────────────────────────────────────────
+    function resetToHome() {
+        if (isFetching) return;
+
+        if (resultSection) resultSection.style.display = "none";
+        if (loadingSection) loadingSection.style.display = "none";
+        if (homeSection) homeSection.style.display = "block";
+        if (cardsContainer) cardsContainer.innerHTML = "";
+        if (searchInput) searchInput.value = "";
+        if (clearBtn) clearBtn.classList.add("hidden");
+        if (placeholderEl) {
+            placeholderEl.style.opacity = "1";
+            placeholderEl.classList.remove("placeholder-hidden");
+            placeholderEl.classList.add("placeholder-visible");
+        }
+        enableSearchBtn();
+    }
+
     function performSearch(query) {
+        if (isFetching) {
+            console.warn("이미 검색 요청이 진행 중입니다.");
+            return;
+        }
+
         var term = query || (searchInput ? searchInput.value.trim() : "");
         if (!term) {
             if (searchInput) searchInput.focus();
+            showToast("프로젝트 키워드나 주제를 입력해주세요!", "warning");
             return;
         }
 
@@ -904,31 +929,42 @@ document.addEventListener("DOMContentLoaded", function () {
         if (homeSection) homeSection.style.display = "none";
         if (resultSection) resultSection.style.display = "none";
         if (loadingSection) loadingSection.style.display = "block";
+        if (cardsContainer) cardsContainer.innerHTML = "";
+        disableSearchBtn();
 
-        // 검색 API 호출
         fetch("/api/search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ keyword: term })
         })
         .then(function (response) {
-            if (!response.ok) {
-                throw new Error("검색 요청 실패 (HTTP " + response.status + ")");
-            }
-            return response.json();
+            return response.json().then(function (body) {
+                return { ok: response.ok, data: body };
+            }).catch(function () {
+                return { ok: response.ok, data: { message: "서버 응답을 처리하는 중 오류가 발생했습니다." } };
+            });
         })
-        .then(function (dataArray) {
-            console.log("검색 결과:", dataArray);
-            renderAllCards(dataArray);
-            if (loadingSection) loadingSection.style.display = "none";
-            if (resultSection) resultSection.style.display = "block";
-            showToast("검색 완료!", "success");
+        .then(function (result) {
+            if (result.ok) {
+                console.log("검색 결과:", result.data);
+                renderAllCards(result.data);
+                if (loadingSection) loadingSection.style.display = "none";
+                if (resultSection) resultSection.style.display = "block";
+                showToast("검색 완료!", "success");
+            } else {
+                if (loadingSection) loadingSection.style.display = "none";
+                if (homeSection) homeSection.style.display = "block";
+                showToast(result.data.message || "검색 중 오류가 발생했습니다.", "error");
+            }
         })
         .catch(function (error) {
             console.error("검색 오류:", error);
             if (loadingSection) loadingSection.style.display = "none";
             if (homeSection) homeSection.style.display = "block";
-            showToast("검색 중 오류가 발생했습니다.", "error");
+            showToast(error && error.message ? error.message : "검색 중 오류가 발생했습니다.", "error");
+        })
+        .finally(function () {
+            enableSearchBtn();
         });
     }
 
@@ -945,6 +981,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (searchBtn) {
         searchBtn.addEventListener("click", function () {
             performSearch();
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener("click", function () {
+            resetToHome();
         });
     }
 
@@ -982,71 +1024,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // ──────────────────────────────────────────────
-    // 폼 제출 이벤트 리스너 (기존 - 제거 예정)
-    // ──────────────────────────────────────────────
     if (searchForm) {
         searchForm.addEventListener("submit", function (e) {
             e.preventDefault();
-
-            // 🚨 Race Condition 방어: 이미 요청 중이면 즉시 무시
-            if (isFetching) {
-                console.warn("이미 API 요청이 진행 중입니다. 중복 요청을 차단합니다.");
-                return;
-            }
-
-            var keyword = searchInput ? searchInput.value.trim() : "";
-            
-            if (!keyword) {
-                showToast("프로젝트 키워드나 주제를 입력해주세요!", "warning");
-                return;
-            }
-
-            console.log("입력된 키워드:", keyword);
-
-            // 검색 버튼 비활성화 + 플래그 설정
-            disableSearchBtn();
-
-            // 기존 결과 화면 초기화 (플리커링 방지)
-            if (cardsContainer) cardsContainer.innerHTML = "";
-
-            // 화면 전환: 홈 → 로딩
-            if (homeSection) homeSection.style.display = "none";
-            if (resultSection) resultSection.style.display = "none";
-            if (loadingSection) loadingSection.style.display = "block";
-
-            // 비동기 통신
-            fetch("/api/search", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ keyword: keyword })
-            })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error("서버 응답에 실패했습니다. (HTTP " + response.status + ")");
-                }
-                return response.json();
-            })
-            .then(function (dataArray) {
-                console.log("백엔드로부터 수신한 데이터:", dataArray);
-
-                // 다중 카드 렌더링
-                renderAllCards(dataArray);
-
-                // 화면 전환: 로딩 → 결과
-                if (loadingSection) loadingSection.style.display = "none";
-                if (resultSection) resultSection.style.display = "block";
-
-                enableSearchBtn();
-            })
-            .catch(function (error) {
-                console.error("에러 발생:", error);
-                showToast("데이터를 처리하는 중 오류가 발생했습니다.", "error");
-                // 에러 시 홈 화면 복구
-                if (loadingSection) loadingSection.style.display = "none";
-                if (homeSection) homeSection.style.display = "block";
-                enableSearchBtn();
-            });
+            performSearch();
         });
     }
 
