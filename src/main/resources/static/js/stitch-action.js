@@ -114,14 +114,12 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         })
         .then(function (result) {
-            if (result.ok && result.data.id) {
+                if (result.ok && result.data.id) {
                 currentUser = result.data;
                 updateProfileUI();
-                console.log("로그인 상태 확인됨:", currentUser);
             } else {
                 currentUser = null;
                 updateProfileUI();
-                console.log("로그인 되지 않은 상태");
             }
         })
         .catch(function (error) {
@@ -310,9 +308,15 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             // 우측: 삭제 버튼
             actionHtml +=
-                '<button type="button" data-delete-id="' + plan.id + '" class="saved-delete-btn flex items-center gap-1 text-label-md text-error hover:text-on-error-container cursor-pointer transition-colors">' +
+                '<button type="button" data-delete-id="' + plan.id + '" class="saved-delete-btn pdf-exclude flex items-center gap-1 text-label-md text-error hover:text-on-error-container cursor-pointer transition-colors">' +
                     '<span class="material-symbols-outlined text-[16px]">delete</span>' +
                     '<span>삭제</span>' +
+                '</button>';
+
+            actionHtml +=
+                '<button type="button" data-pdf-id="' + plan.id + '" class="saved-pdf-btn pdf-exclude flex items-center gap-1 text-label-md text-on-surface bg-surface-container px-3 py-2 rounded-lg hover:bg-surface-container-high transition-colors">' +
+                    '<span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>' +
+                    '<span>PDF</span>' +
                 '</button>';
             actionHtml += '</div>';
 
@@ -388,6 +392,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (confirm("'" + (plan.title || "이 기획안") + "'을(를) 정말 삭제하시겠습니까?")) {
                         deleteSavedPlan(plan.id);
                     }
+                });
+            }
+
+            // PDF 다운로드 버튼 이벤트 바인딩
+            var pdfBtn = card.querySelector('[data-pdf-id="' + plan.id + '"]');
+            if (pdfBtn) {
+                pdfBtn.addEventListener("click", function () {
+                    var filename = "[CapGuide] " + (plan.title || "제목 없음") + ".pdf";
+                    downloadPdf(card, filename);
                 });
             }
         });
@@ -762,8 +775,33 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
-        // Share 버튼 (Markdown 형식으로 전체 카드 데이터 클립보드 복사)
         var shareBtn = clone.querySelector('[data-action="share"]');
+        if (shareBtn) {
+            var actionRow = shareBtn.closest(".flex");
+            if (actionRow) {
+                actionRow.classList.add("pdf-exclude");
+
+                var pdfBtn = document.createElement("button");
+                pdfBtn.type = "button";
+                pdfBtn.className = "flex-1 flex items-center justify-center gap-xs bg-surface-variant text-on-surface text-label-lg font-label-lg px-4 py-2.5 rounded-lg hover:bg-outline-variant transition-colors border border-outline-variant cursor-pointer pdf-exclude";
+                pdfBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span> PDF';
+
+                if (shareBtn && shareBtn.parentNode) {
+                    shareBtn.parentNode.insertBefore(pdfBtn, shareBtn);
+                } else if (actionRow) {
+                    actionRow.appendChild(pdfBtn);
+                }
+
+                pdfBtn.addEventListener("click", function (e) {
+                    var pdfTarget = pdfBtn.closest("article") || pdfBtn.closest("[class*='card']") || pdfBtn.closest("[class*='result-cards-container']") || pdfBtn.parentElement.parentElement;
+                    var filename = "[CapGuide] " + (data.title || "Untitled Project") + ".pdf";
+                    downloadPdf(pdfTarget, filename);
+                });
+            }
+        }
+
+        // Share 버튼 (Markdown 형식으로 전체 카드 데이터 클립보드 복사)
+
         if (shareBtn) {
             shareBtn.addEventListener("click", function () {
                 var lines = [];
@@ -936,7 +974,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        console.log("검색 키워드:", term);
+        
         if (homeSection) homeSection.style.display = "none";
         if (resultSection) resultSection.style.display = "none";
         if (loadingSection) loadingSection.style.display = "block";
@@ -957,7 +995,7 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(function (result) {
             if (result.ok) {
-                console.log("검색 결과:", result.data);
+                
                 renderAllCards(result.data);
                 if (loadingSection) loadingSection.style.display = "none";
                 if (resultSection) resultSection.style.display = "block";
@@ -1050,5 +1088,45 @@ document.addEventListener("DOMContentLoaded", function () {
         var div = document.createElement("div");
         div.appendChild(document.createTextNode(text));
         return div.innerHTML;
+    }
+
+    // 공통 PDF 다운로드 유틸: 대상 엘리먼트와 파일명을 받아 html2pdf로 변환
+    function downloadPdf(targetElement, filename) {
+        if (!targetElement || targetElement.innerText.trim() === "") {
+            showToast("PDF 변환 대상이 없습니다.", "error");
+            return;
+        }
+
+        var originalBg = targetElement.style.backgroundColor;
+        try { targetElement.style.backgroundColor = '#ffffff'; } catch (e) {}
+
+        showToast("PDF 다운로드를 준비 중입니다...", "info");
+
+        var opt = {
+            margin: 0.5,
+            filename: filename || "[CapGuide] export.pdf",
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                backgroundColor: "#ffffff",
+                scrollY: 0,
+                windowWidth: document.documentElement.offsetWidth,
+                ignoreElements: function (element) {
+                    return element.classList && element.classList.contains && element.classList.contains("pdf-exclude");
+                }
+            },
+            jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+        };
+
+        html2pdf().set(opt).from(targetElement).save()
+            .then(function () {
+                showToast("PDF 다운로드가 시작되었습니다.", "success");
+            })
+            .catch(function (error) {
+                console.error("PDF 생성 오류:", error);
+                showToast("PDF 생성 중 오류가 발생했습니다.", "error");
+            }).finally(function () {
+                try { targetElement.style.backgroundColor = originalBg || ''; } catch (e) {}
+            });
     }
 });

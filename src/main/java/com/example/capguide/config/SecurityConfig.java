@@ -38,7 +38,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.INCLUDE, DispatcherType.ERROR).permitAll()
-                .requestMatchers("/", "/api/auth/**", "/api/search", "/css/**", "/js/**", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/api/auth/**", "/api/search", "/css/**", "/js/**", "/images/**", "/h2-console/**", "/favicon.ico").permitAll()
                 .requestMatchers("/WEB-INF/jsp/**", "/error").permitAll()
                 .anyRequest().authenticated()
             );

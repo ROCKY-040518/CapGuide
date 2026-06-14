@@ -21,11 +21,13 @@ ExecStart=/usr/bin/java \
 WorkingDirectory=/home/capguide/capguide
 
 # ── 환경 변수 ──
-# Gemini API 키는 환경 변수로 주입 (GitHub에 노출 차단)
-Environment="GEMINI_API_KEY=your-gemini-api-key-here"
-Environment="SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/capguide?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
-Environment="SPRING_DATASOURCE_USERNAME=root"
-Environment="SPRING_DATASOURCE_PASSWORD=1234"
+# Gemini API 키는 시크릿 매니저/환경변수로 주입하도록 평문을 제거했습니다.
+# 운영환경에서 해당 시크릿을 시스템 환경 또는 시크릿 매니저로 설정하세요.
+Environment="GEMINI_API_KEY=${GEMINI_API_KEY_SECRET}"
+# DB 연결 정보: URL/USERNAME/PASSWORD 등 민감값은 모두 시크릿 참조로 변경합니다.
+Environment="SPRING_DATASOURCE_URL=${DB_URL_SECRET}"
+Environment="SPRING_DATASOURCE_USERNAME=${DB_USERNAME_SECRET}"
+Environment="SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_SECRET}"
 
 # ── 재시작 정책 ──
 # 비정상 종료 시 10초 후 자동 재시작 (무중단 운영)
