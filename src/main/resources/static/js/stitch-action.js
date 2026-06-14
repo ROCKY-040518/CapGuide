@@ -436,6 +436,17 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // 플랜 열람창 외부(배경) 클릭 시 닫기
+    var savedPlansModal = document.getElementById("saved-plans-modal");
+    if (savedPlansModal) {
+        savedPlansModal.addEventListener("click", function (e) {
+            // 클릭한 대상(e.target)이 모달 내부의 하얀 박스가 아니라 어두운 배경(savedPlansModal 자체)일 때만 닫기!
+            if (e.target === savedPlansModal) {
+                toggleSavedPlansModal(false);
+            }
+        });
+    }
+
     // ──────────────────────────────────────────────
     // 모달 관련 헬퍼 함수
     // ──────────────────────────────────────────────
